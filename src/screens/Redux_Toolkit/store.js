@@ -1,4 +1,4 @@
-import {combineReducers, configureStore} from '@reduxjs/toolkit';
+import {combineReducers, configureStore, createActionCreatorInvariantMiddleware} from '@reduxjs/toolkit';
 import productSlice from './slice/productSlice';
 import cartsSlice from './slice/cartsSlice';
 

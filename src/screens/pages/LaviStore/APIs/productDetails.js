@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,50 +8,54 @@ import {
   Pressable,
   SafeAreaView,
 } from 'react-native';
-import {useSelector, useDispatch} from 'react-redux';
-import {Rating} from 'react-native-ratings';
+import { useSelector, useDispatch } from 'react-redux';
+import { Rating } from 'react-native-ratings';
 import { SingleProductApi } from '../../../API/apis';
+import { useNavigation } from '@react-navigation/native';
+import { addCartItem, selectedCartItems } from '../../../Redux_Toolkit/slice/cartsSlice';
 
-const ProductDetails = ({route}) => {
-  const [loading, setLoading] = useState(false);
+const ProductDetails = ({ route }) => {
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const dispatch = useDispatch();
-  const {productId} = route.params || {};
-  // console.log('Received Product ID:', productId);
-  // console.log('Product Details : ', productDetails, 22)
+  const { productId } = route.params || {};
+
   const productDetails = useSelector((state) => state.product.singleProduct);
-  console.log(productDetails, 23)
+  const navigation = useNavigation();
+  const cartItems = useSelector(selectedCartItems);
 
   if (!productId) {
     return (
-      <Text
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          textTransform: 'uppercase',
-          fontSize: 16,
-          fontWeight: '600',
-          color: '#000',
-          textAlign: 'center',
-        }}>
+      <Text style={styles.notFoundText}>
         Product not found
       </Text>
     );
   }
 
+  // Add TO CART BUTTON
+  const addToCart = (item) => {
+    dispatch(addCartItem(item));
+    navigation.navigate('Add Cart');
+  };
+
   useEffect(() => {
-    setLoading(false);
-    dispatch(SingleProductApi({productId, setLoading, setError}));
-  }, []);
+    const fetchProductDetails = async () => {
+      setLoading(true);
+      try {
+        await dispatch(SingleProductApi({ productId, setLoading, setError }));
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductDetails();
+  }, [dispatch, productId]);
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          padding: 10,
-        }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="pink" />
       </View>
     );
@@ -59,76 +63,87 @@ const ProductDetails = ({route}) => {
 
   if (error) {
     return (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          padding: 10,
-        }}>
-        <Text>Error: {error.message}</Text>
+      <View style={styles.errorContainer}>
+        <Text>Error: {error.message || 'Something went wrong'}</Text>
       </View>
     );
   }
 
+  // Check if productDetails is null
+  if (!productDetails) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text>Product details not available.</Text>
+      </View>
+    );
+  }
+
+  const {
+    title,
+    price,
+    discountPercentage,
+    rating,
+    availabilityStatus,
+    description,
+    brand,
+    warrantyInformation,
+    shippingInformation,
+    reviews,
+  } = productDetails;
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>{productDetails.title}</Text>
-      <Text style={styles.price}>
-        ${productDetails.price.toFixed(2)}
-        <Text style={styles.discount}>
-          ({productDetails.discountPercentage}% off)
+      <View>
+        <Text style={styles.heading}>{title}</Text>
+        <Text style={styles.price}>
+          ${price.toFixed(2)}
+          <Text style={styles.discount}> ({discountPercentage}% off)</Text>
         </Text>
-      </Text>
-      <Rating
-        type="star"
-        startingValue={productDetails.rating}
-        readonly
-        imageSize={20}
-        style={styles.rating}
-      />
-      <Text style={styles.stockStatus}>
-        {productDetails.availabilityStatus}
-      </Text>
-      <Text style={styles.description}>{productDetails.description}</Text>
+        <Rating
+          type="star"
+          startingValue={rating}
+          readonly
+          imageSize={20}
+          style={styles.rating}
+        />
+        <Text style={styles.stockStatus}>{availabilityStatus}</Text>
+        <Text style={styles.description}>{description}</Text>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoheading}>Brand:</Text>
-        <Text style={styles.infoText}>{productDetails.brand}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoheading}>Warranty:</Text>
-        <Text style={styles.infoText}>
-          {productDetails.warrantyInformation}
-        </Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoheading}>Shipping:</Text>
-        <Text style={styles.infoText}>
-          {productDetails.shippingInformation}
-        </Text>
-      </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoheading}>Brand:</Text>
+          <Text style={styles.infoText}>{brand}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoheading}>Warranty:</Text>
+          <Text style={styles.infoText}>{warrantyInformation}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoheading}>Shipping:</Text>
+          <Text style={styles.infoText}>{shippingInformation}</Text>
+        </View>
 
-      <Text style={styles.reviewsheading}>Reviews:</Text>
-      <FlatList
-        data={productDetails.reviews}
-        renderItem={({item}) => (
-          <View style={styles.reviewContainer}>
-            <Rating
-              type="star"
-              startingValue={item.rating}
-              readonly
-              imageSize={15}
-              style={styles.reviewRating}
-            />
-            <Text style={styles.reviewComment}>{item.comment}</Text>
-            <Text style={styles.reviewerName}>- {item.reviewerName}</Text>
-          </View>
-        )}
-        keyExtractor={(item, index) => index.toString()}
-      />
-      <Pressable style={styles.buyBtn}>
-        <Text style={styles.buyBtnText}>Buy</Text>
-      </Pressable>
+        <Text style={styles.reviewsheading}>Reviews:</Text>
+        <FlatList
+          data={reviews}
+          renderItem={({ item }) => (
+            <View style={styles.reviewContainer}>
+              <Rating
+                type="star"
+                startingValue={item.rating}
+                readonly
+                imageSize={15}
+                style={styles.reviewRating}
+              />
+              <Text style={styles.reviewComment}>{item.comment}</Text>
+              <Text style={styles.reviewerName}>- {item.reviewerName}</Text>
+            </View>
+          )}
+          keyExtractor={(item, index) => index.toString()}
+        />
+        <Pressable style={styles.buyBtn} onPress={() => addToCart(productDetails)}>
+          <Text style={styles.buyBtnText}>Add To Cart</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -138,6 +153,25 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 10,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 10,
+  },
+  notFoundText: {
+    flex: 1,
+    justifyContent: 'center',
+    textTransform: 'uppercase',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
   },
   heading: {
     fontSize: 22,
@@ -184,7 +218,7 @@ const styles = StyleSheet.create({
   reviewContainer: {
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   reviewRating: {
     marginVertical: 4,
@@ -207,13 +241,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical:20
+    marginVertical: 10,
   },
   buyBtnText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
     textAlign: 'center',
-  }
+  },
 });
+
 export default ProductDetails;

@@ -1,54 +1,48 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  Pressable,
 } from 'react-native';
-import {useSelector, useDispatch} from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { SingleCartApi } from '../../../../API/apis';
 
-const CartDetails = ({route}) => {
-  const [loading, setLoading] = useState(false);
+const CartDetails = ({ route }) => {
+  const [loading, setLoading] = useState(true); // Start loading as true
   const [error, setError] = useState(null);
   const dispatch = useDispatch();
-  const {cartId} = route.params || {};
+  const { cartId } = route.params || {};
   const cartDetails = useSelector((state) => state.cart.singleCart);
-  console.log(cartDetails, 23);
-  console.log('Received Cart ID:', cartId);
 
+  // Check if cartId is available
   if (!cartId) {
     return (
-      <Text
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          textTransform: 'uppercase',
-          fontSize: 16,
-          fontWeight: '600',
-          color: '#000',
-          textAlign: 'center',
-        }}>
+      <Text style={styles.notFoundText}>
         Cart not found
       </Text>
     );
   }
 
   useEffect(() => {
-    setLoading(false);
-    dispatch(SingleCartApi({cartId, setLoading, setError}));
-  }, []);
+    const fetchCartDetails = async () => {
+      setLoading(true);
+      try {
+        await dispatch(SingleCartApi({ cartId, setLoading, setError }));
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCartDetails();
+  }, [dispatch, cartId]);
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          padding: 10,
-        }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="pink" />
       </View>
     );
@@ -56,27 +50,31 @@ const CartDetails = ({route}) => {
 
   if (error) {
     return (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          padding: 10,
-        }}>
+      <View style={styles.errorContainer}>
         <Text>Error: {error.message}</Text>
       </View>
     );
   }
 
-  const renderProduct = ({ item }) => (
-      <View style={styles.cartContainer}>
-        <View style={styles.productInfo}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.price}>Price: ${item.price.toFixed(2)}</Text>
-          <Text style={styles.quantity}>Quantity: {item.quantity}</Text>
-          <Text style={styles.total}>Total: ${item.total.toFixed(2)}</Text>
-          <Text style={styles.discount}>Discount: {item.discountPercentage}%</Text>
-        </View>
+  // Check if cartDetails is available
+  if (!cartDetails) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text>No cart details available.</Text>
       </View>
+    );
+  }
+
+  const renderProduct = ({ item }) => (
+    <View style={styles.cartContainer}>
+      <View style={styles.productInfo}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.price}>Price: ${item.price.toFixed(2)}</Text>
+        <Text style={styles.quantity}>Quantity: {item.quantity}</Text>
+        <Text style={styles.total}>Total: ${item.total.toFixed(2)}</Text>
+        <Text style={styles.discount}>Discount: {item.discountPercentage}%</Text>
+      </View>
+    </View>
   );
 
   return (
@@ -101,6 +99,26 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 10,
+    alignItems: 'center',
+  },
+  notFoundText: {
+    flex: 1,
+    justifyContent: 'center',
+    textTransform: 'uppercase',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+  },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -119,14 +137,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     flexDirection: 'row',
     elevation: 2,
-    borderWidth:1,
-    borderColor:'pink',
-  },
-  thumbnail: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'pink',
   },
   productInfo: {
     flex: 1,
@@ -155,4 +167,5 @@ const styles = StyleSheet.create({
     color: '#000',
   }, 
 });
+
 export default CartDetails;

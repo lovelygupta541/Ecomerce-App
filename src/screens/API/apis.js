@@ -50,9 +50,11 @@ export const SingleProductApi = ({productId, setLoading, setError}) => {
 //CARTS
 export const AllCartApi = ({setLoading, setError}) => {
   const url = `${API.ALLCARTS}`;
+  console.log(url, 158)
   return(dispatch)=>{
     getRequest(url)
     .then((res) => {
+      console.log(res?.data?.carts, 56)
       if (res?.data?.carts) {
         dispatch(setCarts(res?.data?.carts));
         setLoading(false);

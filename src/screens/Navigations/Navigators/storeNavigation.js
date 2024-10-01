@@ -5,6 +5,7 @@ import ProductList from '../../pages/LaviStore/APIs/products';
 import ProductDetails from '../../pages/LaviStore/APIs/productDetails';
 import CartList from '../../pages/LaviStore/APIs/carts/cartList';
 import CartDetails from '../../pages/LaviStore/APIs/carts/cartDetails';
+import AddToCart from '../../pages/LaviStore/APIs/carts/addCarts';
 
 
 const StoreNaviation = () => {
@@ -38,6 +39,10 @@ const StoreNaviation = () => {
       <Stack.Screen
         name="Cart Details"
         component={CartDetails}
+        options={{headerShown: true}}></Stack.Screen>
+      <Stack.Screen
+        name="Add Cart"
+        component={AddToCart}
         options={{headerShown: true}}></Stack.Screen>
     </Stack.Navigator>
   );
